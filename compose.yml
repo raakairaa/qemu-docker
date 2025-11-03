@@ -1,0 +1,51 @@
+services:
+  qemu:
+    image: qemux/qemu
+    container_name: qemu
+    environment:
+      BOOT: "debian"
+      CPU: "4"
+      RAM: "15G"
+
+      # Disk utama
+      DISK_SIZE: "100G"
+
+      # Disk tambahan
+      DISK2_SIZE: "32G"
+      DISK3_SIZE: "64G"
+
+      # Optimasi performa
+      QEMU_ARGS: >
+        -enable-kvm
+        -cpu host
+        -smp 4
+        -drive file=/storage/disk.qcow2,if=virtio,cache=writeback
+        -drive file=/storage2/disk2.qcow2,if=virtio,cache=writeback
+        -drive file=/tmpdisk/disk3.qcow2,if=virtio,cache=writeback
+        -netdev tap,id=n1
+        -device virtio-net-pci,netdev=n1
+        -machine type=pc,accel=kvm
+
+    devices:
+      - /dev/kvm
+      - /dev/net/tun
+
+    cap_add:
+      - NET_ADMIN
+
+    ports:
+      - "8006:8006"
+
+    # Disk mounts (storage3 = /tmp)
+    volumes:
+      - /tmp/qemu-data:/storage
+      - ./qemu-data2:/storage2
+      - /tmp/qemu:/tmpdisk
+
+    restart: unless-stopped
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "1"
